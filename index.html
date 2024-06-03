@@ -1,0 +1,97 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+    <title>ABC Chat</title> 
+    <script src="https://cdn.tailwindcss.com"></script> 
+    <style>
+        /* Custom styles for a more professional look */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+    </style>
+</head> 
+<body class="bg-gray-50"> 
+    <div class="max-w-md w-full bg-white p-8 rounded-lg shadow-lg">
+        <h2 class="font-bold text-3xl text-center mb-6 text-gray-800" id="logo">ABC Chat</h2> 
+
+        <div id="loginArea" class="flex flex-col items-center space-y-4">
+            <input class="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-indigo-500" type="text" placeholder="Username" id="username"> 
+            <input class="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-indigo-500" type="password" placeholder="Password" id="password"> 
+            <button class="bg-indigo-600 rounded-lg p-3 text-white w-full hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500" id="loginButton">Login</button> 
+            <button class="bg-green-600 rounded-lg p-3 text-white w-full hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500" id="signupButton">Sign Up</button> 
+        </div>
+
+        <div id="chatArea" class="hidden mt-6">
+            <form class="flex flex-col justify-center items-center space-y-4" id="form"> 
+                <input class="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-indigo-500" type="text" placeholder="Message" id="message"> 
+                <button class="bg-indigo-600 rounded-lg p-3 text-white w-full hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">Send</button> 
+            </form> 
+            <div class="flex flex-col justify-start items-start mt-6 w-full space-y-2 p-4 bg-gray-100 rounded-lg overflow-auto h-64" id="messageArea"></div> 
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script> 
+    <script> 
+        let socket = io(); 
+
+        let loginArea = document.getElementById('loginArea');
+        let chatArea = document.getElementById('chatArea');
+        let form = document.getElementById('form'); 
+        let usernameInput = document.getElementById('username');
+        let passwordInput = document.getElementById('password');
+        let loginButton = document.getElementById('loginButton');
+        let signupButton = document.getElementById('signupButton');
+        let message = document.getElementById('message'); 
+        let messageArea = document.getElementById("messageArea"); 
+
+        let username = '';
+
+        loginButton.addEventListener("click", () => {
+            socket.emit('login', { username: usernameInput.value, password: passwordInput.value });
+        });
+
+        signupButton.addEventListener("click", () => {
+            socket.emit('signup', { username: usernameInput.value, password: passwordInput.value });
+        });
+
+        form.addEventListener("submit", (e) => { 
+            e.preventDefault(); 
+            if (message.value) { 
+                let time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                socket.emit('send message', { username: username, message: message.value, time: time }); 
+                message.value = ""; 
+            } 
+        }); 
+
+        socket.on("login success", (user) => {
+            username = user.username;
+            loginArea.classList.add('hidden');
+            chatArea.classList.remove('hidden');
+        });
+
+        socket.on("send message", (data) => { 
+            let chatContent = document.createElement("div"); 
+            chatContent.classList.add("bg-white", "p-3", "rounded-lg", "shadow-sm", "w-full", "break-words", "flex", "justify-between", "items-center");
+
+            let messageText = document.createElement("span");
+            messageText.textContent = data.username + ": " + data.message;
+            messageText.classList.add("text-gray-800");
+
+            let messageTime = document.createElement("span");
+            messageTime.textContent = data.time;
+            messageTime.classList.add("text-gray-500", "text-sm");
+
+            chatContent.appendChild(messageText);
+            chatContent.appendChild(messageTime);
+            messageArea.appendChild(chatContent);
+        });
+
+        socket.on("error", (errorMessage) => {
+            alert(errorMessage);
+        });
+    </script> 
+</body> 
+</html>
